@@ -102,23 +102,7 @@ function coming_soon_admin_form($form, &$form_state) {
     '#min' => 0,
     '#max' => 100,
     '#step' => 5,
-    '#field_suffix' => '<span id="opacity-value">' . $config->get('overlay_opacity') . '</span>%',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="files[background_image]"]' => array('filled' => TRUE),
-      ),
-    ),
-    '#attached' => array(
-      'js' => array(
-        '(function($) {
-          $(document).ready(function() {
-            $("input[name=\'overlay_opacity\']").on("input", function() {
-              $("#opacity-value").text($(this).val());
-            });
-          });
-        })(jQuery);' => array('type' => 'inline'),
-      ),
-    ),
+    '#field_suffix' => '<span class="range-value" data-for="overlay_opacity">' . $config->get('overlay_opacity') . '</span>%',
   );
 
   $form['styling']['text_color'] = array(
@@ -153,40 +137,18 @@ function coming_soon_admin_form($form, &$form_state) {
     '#min' => 24,
     '#max' => 72,
     '#step' => 4,
-    '#field_suffix' => '<span id="title-size-value">' . $config->get('title_size') . '</span>px',
-    '#attached' => array(
-      'js' => array(
-        '(function($) {
-          $(document).ready(function() {
-            $("input[name=\'title_size\']").on("input", function() {
-              $("#title-size-value").text($(this).val());
-            });
-          });
-        })(jQuery);' => array('type' => 'inline'),
-      ),
-    ),
+    '#field_suffix' => '<span class="range-value" data-for="title_size">' . $config->get('title_size') . '</span>px',
   );
 
   $form['styling']['message_size'] = array(
     '#type' => 'range',
     '#title' => t('Message size'),
     '#description' => t('Size of the message text.'),
-    '#default_value' => $config->get('message_size') ?: 19,
+    '#default_value' => $config->get('message_size'),
     '#min' => 14,
     '#max' => 28,
     '#step' => 1,
-    '#field_suffix' => '<span id="message-size-value">' . ($config->get('message_size') ?: 19) . '</span>px',
-    '#attached' => array(
-      'js' => array(
-        '(function($) {
-          $(document).ready(function() {
-            $("input[name=\'message_size\']").on("input", function() {
-              $("#message-size-value").text($(this).val());
-            });
-          });
-        })(jQuery);' => array('type' => 'inline'),
-      ),
-    ),
+    '#field_suffix' => '<span class="range-value" data-for="message_size">' . ($config->get('message_size') ?: 19) . '</span>px',
   );
 
   $form['permissions_note'] = array(
@@ -196,6 +158,8 @@ function coming_soon_admin_form($form, &$form_state) {
       '!link' => l(t('admin/config/people/permissions'), 'admin/config/people/permissions', array('fragment' => 'module-coming_soon')),
     )),
   );
+
+  $form['#attached']['js'][] = backdrop_get_path('module', 'coming_soon') . '/js/coming_soon.js';
 
   $form = system_settings_form($form);
   return $form;
