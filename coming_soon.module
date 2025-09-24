@@ -131,14 +131,18 @@ function coming_soon_display_page() {
 
   // Add CSS
   $css = coming_soon_build_css($background_color, $background_image_url, $overlay_opacity, $text_color, $font_family, $title_size, $message_size);
-  $styles = '<style>' . $css . '</style>';
+  backdrop_add_css($css, array('type' => 'inline'));
 
   // Add JS if countdown is enabled
   $scripts = '';
   if ($show_countdown && $launch_date) {
     $js = coming_soon_build_js($launch_date, $launch_time);
-    $scripts = '<script>' . $js . '</script>';
+    backdrop_add_js($js, array('type' => 'inline'));
   }
+
+  // Get rendered CSS and JS for the template
+  $styles = backdrop_get_css();
+  $scripts = backdrop_get_js();
 
 
   // Set page title
