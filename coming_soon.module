@@ -43,6 +43,7 @@ function coming_soon_init() {
 
   $config = config('coming_soon.settings');
   $enabled = $config->get('enabled');
+  $current_path = current_path();
 
   // Only show coming soon page if enabled
   if (!$enabled) {
@@ -59,10 +60,38 @@ function coming_soon_init() {
     return;
   }
 
-  // Don't show on user login/register pages
-  $current_path = current_path();
-  if (in_array($current_path, array('user/login', 'user/register', 'user/password'))) {
+  // Always allow access to user login page (security measure)
+  if ($current_path === 'user/login') {
     return;
+  }
+
+  // Check configurable excluded paths
+  $excluded_paths = $config->get('excluded_paths');
+
+  // If excluded_paths has never been configured (NULL), use sensible defaults
+  // If it's an empty string, the admin wants no exclusions (respect that choice)
+  if ($excluded_paths === NULL) {
+    $excluded_paths = "user\nuser/*\nuser/login\nuser/register\nuser/password";
+  }
+
+  // Process excluded paths only if we have any
+  if (!empty($excluded_paths)) {
+    $excluded_paths_array = array_filter(array_map('trim', explode("\n", $excluded_paths)));
+
+    foreach ($excluded_paths_array as $excluded_path) {
+      // Handle wildcard paths
+      if (strpos($excluded_path, '*') !== FALSE) {
+        $pattern = '/^' . str_replace('\*', '.*', preg_quote($excluded_path, '/')) . '$/';
+        if (preg_match($pattern, $current_path)) {
+          return;
+        }
+      } else {
+        // Exact path match
+        if ($current_path === $excluded_path) {
+          return;
+        }
+      }
+    }
   }
 
   // Show coming soon page
@@ -78,15 +107,18 @@ function coming_soon_display_page() {
 
   $config = config('coming_soon.settings');
 
-  $title = $config->get('page_title') ?: t('Coming Soon');
-  $message = $config->get('message') ?: t('We are working hard to bring you something amazing. Stay tuned!');
+  $title = $config->get('page_title');
+  $message = nl2br($config->get('message'));
   $show_countdown = $config->get('show_countdown');
-  $launch_date = $config->get('launch_date');
-  $launch_time = $config->get('launch_time') ?: '12:00';
-  $background_color = $config->get('background_color') ?: '#ffffff';
+  $launch_date = $config->get('launch_datetime.date');
+  $launch_time = $config->get('launch_datetime.time');
+  $background_color = $config->get('background_color');
   $background_image_fid = $config->get('background_image');
-  $overlay_opacity = $config->get('overlay_opacity') ?: 90;
-  $text_color = $config->get('text_color') ?: '#333333';
+  $overlay_opacity = $config->get('overlay_opacity');
+  $text_color = $config->get('text_color');
+  $font_family = $config->get('font_family');
+  $title_size = $config->get('title_size');
+  $message_size = $config->get('message_size');
 
   // Get background image URL if available
   $background_image_url = '';
@@ -97,16 +129,17 @@ function coming_soon_display_page() {
     }
   }
 
-  // Debug: log what we're getting from config
-  watchdog('coming_soon', 'Config values - bg_image_fid: @fid, bg_image_url: @url', array(
-    '@fid' => var_export($background_image_fid, TRUE),
-    '@url' => var_export($background_image_url, TRUE),
-  ));
+  // Add CSS
+  $css = coming_soon_build_css($background_color, $background_image_url, $overlay_opacity, $text_color, $font_family, $title_size, $message_size);
+  $styles = '<style>' . $css . '</style>';
 
-  // Ensure launch_date is a string
-  if (is_array($launch_date)) {
-    $launch_date = '';
+  // Add JS if countdown is enabled
+  $scripts = '';
+  if ($show_countdown && $launch_date) {
+    $js = coming_soon_build_js($launch_date, $launch_time);
+    $scripts = '<script>' . $js . '</script>';
   }
+
 
   // Set page title
   backdrop_set_title($title);
@@ -123,13 +156,9 @@ function coming_soon_display_page() {
     'overlay_opacity' => $overlay_opacity,
     'text_color' => $text_color,
     'language' => $language,
-    'debug_info' => FALSE, // Debug flag
+    'styles' => $styles,
+    'scripts' => $scripts,
   );
-
-  // Debug: Check what we're passing to the theme
-  watchdog('coming_soon', 'Passing to theme - bg_image_url: @url', array(
-    '@url' => $background_image_url,
-  ));
 
   // Output the page
   print theme('coming_soon_page', $content);
@@ -167,4 +196,160 @@ function coming_soon_theme() {
       'template' => 'coming-soon-page',
     ),
   );
+}
+
+/**
+ * Build CSS for the coming soon page.
+ */
+function coming_soon_build_css($background_color, $background_image_url, $overlay_opacity, $text_color, $font_family, $title_size, $message_size) {
+  // Font family mapping
+  $fonts = array(
+    'helvetica' => "'Helvetica Neue', Arial, sans-serif",
+    'georgia' => "Georgia, serif",
+    'times' => "'Times New Roman', Times, serif",
+    'arial' => "Arial, sans-serif",
+    'verdana' => "Verdana, sans-serif",
+    'courier' => "'Courier New', monospace",
+    'impact' => "Impact, sans-serif",
+    'trebuchet' => "'Trebuchet MS', sans-serif",
+  );
+
+  $font_stack = isset($fonts[$font_family]) ? $fonts[$font_family] : $fonts['helvetica'];
+
+  $background_style = !empty($background_image_url)
+    ? "background: url('$background_image_url') center center / cover no-repeat fixed;"
+    : "background-color: $background_color;";
+
+  $overlay_style = '';
+  if (!empty($background_image_url)) {
+    $rgb = sscanf($background_color, "#%02x%02x%02x");
+    $opacity = $overlay_opacity / 100;
+    $rgba = implode(', ', $rgb) . ', ' . $opacity;
+    $overlay_style = "
+      background-color: rgba($rgba);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);";
+  }
+
+  // Responsive title size (80% on mobile)
+  $mobile_title_size = round($title_size * 0.67);
+
+  return "
+    body.coming-soon-page {
+      margin: 0;
+      padding: 0;
+      font-family: $font_stack;
+      color: $text_color;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+      $background_style
+    }
+
+    .coming-soon-container {
+      max-width: 600px;
+      padding: 40px 20px;
+      $overlay_style
+    }
+
+    .coming-soon-title {
+      font-size: {$title_size}px;
+      font-weight: 300;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+
+    .coming-soon-message {
+      font-size: {$message_size}px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+      opacity: 0.8;
+    }
+
+    .countdown-container {
+      margin-top: 40px;
+    }
+
+    .countdown {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .countdown-item {
+      text-align: center;
+      min-width: 80px;
+    }
+
+    .countdown-number {
+      font-size: 2.5em;
+      font-weight: bold;
+      display: block;
+      line-height: 1;
+    }
+
+    .countdown-label {
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.7;
+      margin-top: 5px;
+    }
+
+    @media (max-width: 600px) {
+      .coming-soon-title {
+        font-size: {$mobile_title_size}px;
+      }
+
+      .countdown {
+        gap: 15px;
+      }
+
+      .countdown-item {
+        min-width: 60px;
+      }
+
+      .countdown-number {
+        font-size: 1.8em;
+      }
+    }";
+}
+
+
+/**
+ * Build JavaScript for the countdown timer.
+ */
+function coming_soon_build_js($launch_date, $launch_time) {
+  $finished_message = t('Ja estem aquí!');
+
+  return "
+    var launchTime = '$launch_time' || '12:00';
+    var launchDateTime = '$launch_date' + 'T' + launchTime;
+    var launchDate = new Date(launchDateTime).getTime();
+
+    function updateCountdown() {
+      var now = new Date().getTime();
+      var distance = launchDate - now;
+
+      if (distance < 0 || isNaN(distance)) {
+        document.getElementById('countdown').innerHTML = '<div style=\"font-size: 1.5em;\">$finished_message</div>';
+        return;
+      }
+
+      var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      document.getElementById('days').innerHTML = days.toString().padStart(2, '0');
+      document.getElementById('hours').innerHTML = hours.toString().padStart(2, '0');
+      document.getElementById('minutes').innerHTML = minutes.toString().padStart(2, '0');
+      document.getElementById('seconds').innerHTML = seconds.toString().padStart(2, '0');
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);";
 }

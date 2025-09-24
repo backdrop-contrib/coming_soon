@@ -20,11 +20,19 @@ function coming_soon_admin_form($form, &$form_state) {
     '#default_value' => $config->get('enabled'),
   );
 
+  $form['excluded_paths'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Excluded paths'),
+    '#description' => t('Specify paths that should not show the coming soon page. Enter one path per line. Use * as a wildcard. Leave empty to show coming soon on all pages. Admin pages and user/login are always excluded.'),
+    '#default_value' => $config->get('excluded_paths'),
+    '#rows' => 5,
+  );
+
   $form['page_title'] = array(
     '#type' => 'textfield',
     '#title' => t('Page title'),
     '#description' => t('The title to display on the coming soon page.'),
-    '#default_value' => $config->get('page_title') ?: t('Coming Soon'),
+    '#default_value' => $config->get('page_title'),
     '#required' => TRUE,
   );
 
@@ -32,7 +40,7 @@ function coming_soon_admin_form($form, &$form_state) {
     '#type' => 'textarea',
     '#title' => t('Message'),
     '#description' => t('The message to display to visitors.'),
-    '#default_value' => $config->get('message') ?: t('We are working hard to bring you something amazing. Stay tuned!'),
+    '#default_value' => $config->get('message'),
     '#rows' => 4,
     '#required' => TRUE,
   );
@@ -41,7 +49,7 @@ function coming_soon_admin_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Countdown settings'),
     '#collapsible' => TRUE,
-    '#collapsed' => !$config->get('show_countdown'),
+    '#collapsed' => FALSE,
   );
 
   $form['countdown']['show_countdown'] = array(
@@ -51,47 +59,12 @@ function coming_soon_admin_form($form, &$form_state) {
     '#default_value' => $config->get('show_countdown'),
   );
 
-  $saved_date = $config->get('launch_date');
-  $default_date = array(
-    'year' => date('Y', strtotime('+1 month')),
-    'month' => date('n', strtotime('+1 month')),
-    'day' => date('j', strtotime('+1 month')),
-  );
-
-  if (!empty($saved_date) && is_string($saved_date)) {
-    $date_parts = explode('-', $saved_date);
-    if (count($date_parts) == 3) {
-      $default_date = array(
-        'year' => (int)$date_parts[0],
-        'month' => (int)$date_parts[1],
-        'day' => (int)$date_parts[2],
-      );
-    }
-  }
-
-  $form['countdown']['launch_date'] = array(
-    '#type' => 'date',
-    '#title' => t('Launch date'),
-    '#description' => t('The expected launch date for the countdown timer.'),
-    '#default_value' => $default_date,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="show_countdown"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
-
-  $form['countdown']['launch_time'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Launch time'),
-    '#description' => t('The expected launch time in HH:MM format (24-hour format).'),
-    '#default_value' => $config->get('launch_time') ?: '12:00',
-    '#size' => 10,
-    '#maxlength' => 5,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="show_countdown"]' => array('checked' => TRUE),
-      ),
+  $form['countdown']['launch_datetime'] = array(
+    '#type' => 'html_datetime',
+    '#title' => t('Launch date and time'),
+    '#default_value' => array(
+      'date' => $config->get('launch_datetime.date'),
+      'time' => $config->get('launch_datetime.time'),
     ),
   );
 
@@ -99,20 +72,20 @@ function coming_soon_admin_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Styling'),
     '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+    '#collapsed' => FALSE,
   );
 
   $form['styling']['background_color'] = array(
     '#type' => 'color',
     '#title' => t('Background color'),
     '#description' => t('Background color for the coming soon page (used if no background image is set, or as overlay color if image is set).'),
-    '#default_value' => $config->get('background_color') ?: '#ffffff',
+    '#default_value' => $config->get('background_color'),
   );
 
   $form['styling']['background_image'] = array(
     '#type' => 'managed_file',
     '#title' => t('Background image'),
-    '#description' => t('Upload a background image for the coming soon page. If set, this will override the background color.'),
+    '#description' => t('Upload a background image for the coming soon page.'),
     '#default_value' => $config->get('background_image') ? $config->get('background_image') : NULL,
     '#upload_location' => 'public://coming_soon/',
     '#upload_validators' => array(
@@ -125,11 +98,11 @@ function coming_soon_admin_form($form, &$form_state) {
     '#type' => 'range',
     '#title' => t('Overlay opacity'),
     '#description' => t('Controls the transparency of the content area overlay when using a background image (0 = fully transparent, 100 = fully opaque).'),
-    '#default_value' => $config->get('overlay_opacity') ?: 90,
+    '#default_value' => $config->get('overlay_opacity'),
     '#min' => 0,
     '#max' => 100,
     '#step' => 5,
-    '#field_suffix' => '<span id="opacity-value">' . ($config->get('overlay_opacity') ?: 90) . '</span>%',
+    '#field_suffix' => '<span id="opacity-value">' . $config->get('overlay_opacity') . '</span>%',
     '#states' => array(
       'visible' => array(
         ':input[name="files[background_image]"]' => array('filled' => TRUE),
@@ -152,7 +125,68 @@ function coming_soon_admin_form($form, &$form_state) {
     '#type' => 'color',
     '#title' => t('Text color'),
     '#description' => t('Text color for the coming soon page.'),
-    '#default_value' => $config->get('text_color') ?: '#333333',
+    '#default_value' => $config->get('text_color'),
+  );
+
+  $form['styling']['font_family'] = array(
+    '#type' => 'select',
+    '#title' => t('Font family'),
+    '#description' => t('Choose the font family for the text.'),
+    '#default_value' => $config->get('font_family'),
+    '#options' => array(
+      'helvetica' => t('Helvetica Neue (Default)'),
+      'georgia' => t('Georgia (Serif)'),
+      'times' => t('Times New Roman (Classic)'),
+      'arial' => t('Arial (Sans-serif)'),
+      'verdana' => t('Verdana (Clean)'),
+      'courier' => t('Courier New (Monospace)'),
+      'impact' => t('Impact (Bold)'),
+      'trebuchet' => t('Trebuchet MS (Modern)'),
+    ),
+  );
+
+  $form['styling']['title_size'] = array(
+    '#type' => 'range',
+    '#title' => t('Title size'),
+    '#description' => t('Size of the main title.'),
+    '#default_value' => $config->get('title_size'),
+    '#min' => 24,
+    '#max' => 72,
+    '#step' => 4,
+    '#field_suffix' => '<span id="title-size-value">' . $config->get('title_size') . '</span>px',
+    '#attached' => array(
+      'js' => array(
+        '(function($) {
+          $(document).ready(function() {
+            $("input[name=\'title_size\']").on("input", function() {
+              $("#title-size-value").text($(this).val());
+            });
+          });
+        })(jQuery);' => array('type' => 'inline'),
+      ),
+    ),
+  );
+
+  $form['styling']['message_size'] = array(
+    '#type' => 'range',
+    '#title' => t('Message size'),
+    '#description' => t('Size of the message text.'),
+    '#default_value' => $config->get('message_size') ?: 19,
+    '#min' => 14,
+    '#max' => 28,
+    '#step' => 1,
+    '#field_suffix' => '<span id="message-size-value">' . ($config->get('message_size') ?: 19) . '</span>px',
+    '#attached' => array(
+      'js' => array(
+        '(function($) {
+          $(document).ready(function() {
+            $("input[name=\'message_size\']").on("input", function() {
+              $("#message-size-value").text($(this).val());
+            });
+          });
+        })(jQuery);' => array('type' => 'inline'),
+      ),
+    ),
   );
 
   $form['permissions_note'] = array(
@@ -171,10 +205,13 @@ function coming_soon_admin_form($form, &$form_state) {
  * Validation handler for coming_soon_admin_form().
  */
 function coming_soon_admin_form_validate($form, &$form_state) {
-  // Validate time format
-  $launch_time = $form_state['values']['launch_time'];
-  if (!empty($launch_time) && !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $launch_time)) {
-    form_set_error('launch_time', t('Launch time must be in HH:MM format (e.g., 14:30).'));
+  // Handle empty excluded_paths - ensure it saves as empty string instead of NULL
+  if (empty($form_state['values']['excluded_paths'])) {
+    $form_state['values']['excluded_paths'] = '';
+  } else {
+    // Clean up the paths - remove extra whitespace
+    $paths = array_filter(array_map('trim', explode("\n", $form_state['values']['excluded_paths'])));
+    $form_state['values']['excluded_paths'] = implode("\n", $paths);
   }
 
   // Handle background image upload
@@ -194,20 +231,5 @@ function coming_soon_admin_form_validate($form, &$form_state) {
     }
   } else {
     $form_state['values']['background_image'] = 0;
-  }
-
-  // Convert date array to string format for automatic saving
-  if (isset($form_state['values']['launch_date']) && is_array($form_state['values']['launch_date'])) {
-    $date = $form_state['values']['launch_date'];
-    if (!empty($date['year']) && !empty($date['month']) && !empty($date['day'])) {
-      $form_state['values']['launch_date'] = sprintf(
-        '%04d-%02d-%02d',
-        $date['year'],
-        $date['month'],
-        $date['day']
-      );
-    } else {
-      $form_state['values']['launch_date'] = '';
-    }
   }
 }

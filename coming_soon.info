@@ -1,9 +1,6 @@
-type = module
 name = Coming Soon
 description = Displays a coming soon page while the site is under development
-core = 1.x
-package = Other
-version = 1.x-1.0.0
 backdrop = 1.x
+type = module
 
 configure = admin/config/system/coming-soon

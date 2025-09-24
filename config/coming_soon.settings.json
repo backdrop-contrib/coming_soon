@@ -1,13 +1,17 @@
 {
     "_config_name": "coming_soon.settings",
     "enabled": false,
+    "excluded_paths": "user\nuser/*\nuser/login\nuser/register\nuser/password\napi\napi/*",
     "page_title": "Coming Soon",
     "message": "We are working hard to bring you something amazing. Stay tuned!",
     "show_countdown": false,
     "launch_date": "",
-    "launch_time": "12:00",
+    "launch_time": "00:00",
     "background_color": "#ffffff",
     "background_image": 0,
     "overlay_opacity": 90,
-    "text_color": "#333333"
+    "text_color": "#333333",
+    "font_family": "helvetica",
+    "title_size": 48,
+    "message_size": 19
 }
