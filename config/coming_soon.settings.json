@@ -1,0 +1,13 @@
+{
+    "_config_name": "coming_soon.settings",
+    "enabled": false,
+    "page_title": "Coming Soon",
+    "message": "We are working hard to bring you something amazing. Stay tuned!",
+    "show_countdown": false,
+    "launch_date": "",
+    "launch_time": "12:00",
+    "background_color": "#ffffff",
+    "background_image": 0,
+    "overlay_opacity": 90,
+    "text_color": "#333333"
+}

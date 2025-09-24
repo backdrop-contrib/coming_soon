@@ -1,0 +1,170 @@
+<?php
+
+/**
+ * @file
+ * Coming Soon module for Backdrop CMS
+ * Displays a coming soon page while the site is under development
+ */
+
+/**
+ * Implements hook_config_info().
+ */
+function coming_soon_config_info() {
+  $prefixes['coming_soon.settings'] = array(
+    'label' => t('Coming Soon settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function coming_soon_menu() {
+  $items = array();
+
+  $items['admin/config/system/coming-soon'] = array(
+    'title' => 'Coming Soon',
+    'description' => 'Configure coming soon page settings',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('coming_soon_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'coming_soon.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_init().
+ */
+function coming_soon_init() {
+  global $user;
+
+  $config = config('coming_soon.settings');
+  $enabled = $config->get('enabled');
+
+  // Only show coming soon page if enabled
+  if (!$enabled) {
+    return;
+  }
+
+  // Don't show to users with bypass permission
+  if (user_access('bypass coming soon')) {
+    return;
+  }
+
+  // Don't show on admin pages
+  if (path_is_admin(current_path())) {
+    return;
+  }
+
+  // Don't show on user login/register pages
+  $current_path = current_path();
+  if (in_array($current_path, array('user/login', 'user/register', 'user/password'))) {
+    return;
+  }
+
+  // Show coming soon page
+  coming_soon_display_page();
+  exit;
+}
+
+/**
+ * Display the coming soon page.
+ */
+function coming_soon_display_page() {
+  global $language;
+
+  $config = config('coming_soon.settings');
+
+  $title = $config->get('page_title') ?: t('Coming Soon');
+  $message = $config->get('message') ?: t('We are working hard to bring you something amazing. Stay tuned!');
+  $show_countdown = $config->get('show_countdown');
+  $launch_date = $config->get('launch_date');
+  $launch_time = $config->get('launch_time') ?: '12:00';
+  $background_color = $config->get('background_color') ?: '#ffffff';
+  $background_image_fid = $config->get('background_image');
+  $overlay_opacity = $config->get('overlay_opacity') ?: 90;
+  $text_color = $config->get('text_color') ?: '#333333';
+
+  // Get background image URL if available
+  $background_image_url = '';
+  if (!empty($background_image_fid) && $background_image_fid != 0) {
+    $file = file_load($background_image_fid);
+    if ($file && file_exists($file->uri)) {
+      $background_image_url = file_create_url($file->uri);
+    }
+  }
+
+  // Debug: log what we're getting from config
+  watchdog('coming_soon', 'Config values - bg_image_fid: @fid, bg_image_url: @url', array(
+    '@fid' => var_export($background_image_fid, TRUE),
+    '@url' => var_export($background_image_url, TRUE),
+  ));
+
+  // Ensure launch_date is a string
+  if (is_array($launch_date)) {
+    $launch_date = '';
+  }
+
+  // Set page title
+  backdrop_set_title($title);
+
+  // Build the page content
+  $content = array(
+    'title' => $title,
+    'message' => $message,
+    'show_countdown' => $show_countdown,
+    'launch_date' => $launch_date,
+    'launch_time' => $launch_time,
+    'background_color' => $background_color,
+    'background_image_url' => $background_image_url,
+    'overlay_opacity' => $overlay_opacity,
+    'text_color' => $text_color,
+    'language' => $language,
+    'debug_info' => FALSE, // Debug flag
+  );
+
+  // Debug: Check what we're passing to the theme
+  watchdog('coming_soon', 'Passing to theme - bg_image_url: @url', array(
+    '@url' => $background_image_url,
+  ));
+
+  // Output the page
+  print theme('coming_soon_page', $content);
+}
+
+/**
+ * Implements hook_permission().
+ */
+function coming_soon_permission() {
+  return array(
+    'bypass coming soon' => array(
+      'title' => t('Bypass coming soon page'),
+      'description' => t('Access the site even when coming soon mode is enabled.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function coming_soon_theme() {
+  return array(
+    'coming_soon_page' => array(
+      'variables' => array(
+        'title' => NULL,
+        'message' => NULL,
+        'show_countdown' => FALSE,
+        'launch_date' => NULL,
+        'launch_time' => '00:00',
+        'background_color' => '#ffffff',
+        'text_color' => '#333333',
+        'language' => NULL,
+        'debug_info' => FALSE,
+      ),
+      'template' => 'coming-soon-page',
+    ),
+  );
+}
