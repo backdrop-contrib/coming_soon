@@ -94,15 +94,16 @@ function coming_soon_init() {
     }
   }
 
-  // Show coming soon page
-  coming_soon_display_page();
-  exit;
+  define('COMING_SOON_MODE', TRUE);
+  $page = coming_soon_build_page();
+  backdrop_deliver_page($page, 'backdrop_deliver_html_page');
+  backdrop_exit();
 }
 
 /**
  * Display the coming soon page.
  */
-function coming_soon_display_page() {
+function coming_soon_build_page() {
   global $language;
 
   $config = config('coming_soon.settings');
@@ -140,32 +141,27 @@ function coming_soon_display_page() {
     backdrop_add_js($js, array('type' => 'inline'));
   }
 
-  // Get rendered CSS and JS for the template
-  $styles = backdrop_get_css();
-  $scripts = backdrop_get_js();
-
-
   // Set page title
   backdrop_set_title($title);
 
-  // Build the page content
-  $content = array(
-    'title' => $title,
-    'message' => $message,
-    'show_countdown' => $show_countdown,
-    'launch_date' => $launch_date,
-    'launch_time' => $launch_time,
-    'background_color' => $background_color,
-    'background_image_url' => $background_image_url,
-    'overlay_opacity' => $overlay_opacity,
-    'text_color' => $text_color,
-    'language' => $language,
-    'styles' => $styles,
-    'scripts' => $scripts,
+  // Prepare render array for the page.
+  $page = array(
+    '#type' => 'page',
+    '#title' => $title,
+    'content' => array(
+      '#theme' => 'coming_soon_page',
+      '#title' => $title,
+      '#message' => $message,
+      '#show_countdown' => $show_countdown,
+      '#launch_date' => $launch_date,
+      '#launch_time' => $launch_time,
+      '#background_color' => $background_color,
+      '#text_color' => $text_color,
+      '#language' => $language,
+    ),
   );
 
-  // Output the page
-  print theme('coming_soon_page', $content);
+  return $page;
 }
 
 /**
@@ -195,7 +191,6 @@ function coming_soon_theme() {
         'background_color' => '#ffffff',
         'text_color' => '#333333',
         'language' => NULL,
-        'debug_info' => FALSE,
       ),
       'template' => 'coming-soon-page',
     ),
@@ -330,6 +325,7 @@ function coming_soon_build_js($launch_date, $launch_time) {
   $finished_message = t('Ja estem aquí!');
 
   return "
+  document.addEventListener('DOMContentLoaded', function() {
     var launchTime = '$launch_time' || '12:00';
     var launchDateTime = '$launch_date' + 'T' + launchTime;
     var launchDate = new Date(launchDateTime).getTime();
@@ -355,5 +351,11 @@ function coming_soon_build_js($launch_date, $launch_time) {
     }
 
     updateCountdown();
-    setInterval(updateCountdown, 1000);";
+    setInterval(updateCountdown, 1000);
+    });";
+}
+
+
+function coming_soon_preprocess_page(&$variables) {
+  $variables['classes'][] = 'coming-soon-page';
 }
