@@ -7,6 +7,7 @@
  * This template renders the Coming Soon page content when the module is enabled.
  *
  * Available variables:
+ * - $site_name: Site Name set in system settings.
  * - $title: The page title configured in the module settings.
  * - $message: The coming soon message, may contain HTML from nl2br().
  * - $show_countdown: Boolean indicating if the countdown timer should be displayed.
@@ -32,6 +33,9 @@
  */
 ?>
 <div class="coming-soon-container">
+  <?php if ($site_name): ?>
+    <div class="site-name"><?php print $site_name; ?></div>
+  <?php endif; ?>
   <h1 class="coming-soon-title"><?php print $title; ?></h1>
   <div class="coming-soon-message"><?php print $message; ?></div>
 

@@ -2,6 +2,7 @@
     "_config_name": "coming_soon.settings",
     "enabled": false,
     "excluded_paths": "user\nuser/*\nuser/login\nuser/register\nuser/password\napi\napi/*",
+    "show_site_name": 0,
     "page_title": "Coming Soon",
     "message": "We are working hard to bring you something amazing. Stay tuned!",
     "show_countdown": false,

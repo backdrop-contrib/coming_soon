@@ -131,6 +131,12 @@ function coming_soon_build_page() {
   $title_size = $config->get('title_size');
   $message_size = $config->get('message_size');
 
+  $site_name = NULL;
+  if ($config->get('show_site_name')) {
+    $system_config = config('system.core');
+    $site_name = $system_config->get('site_name');
+  }
+
   // Get background image URL if available
   $background_image_url = '';
   if (!empty($background_image_fid) && $background_image_fid != 0) {
@@ -160,6 +166,7 @@ function coming_soon_build_page() {
     '#title' => $title,
     'content' => array(
       '#theme' => 'coming_soon_page',
+      '#site_name' => $site_name,
       '#title' => $title,
       '#message' => $message,
       '#show_countdown' => $show_countdown,
@@ -193,6 +200,7 @@ function coming_soon_theme() {
   return array(
     'coming_soon_page' => array(
       'variables' => array(
+        'site_name' => NULL,
         'title' => NULL,
         'message' => NULL,
         'show_countdown' => FALSE,
