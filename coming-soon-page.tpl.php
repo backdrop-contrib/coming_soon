@@ -40,19 +40,19 @@
       <div class="countdown" id="countdown">
         <div class="countdown-item">
           <span class="countdown-number" id="days">00</span>
-          <div class="countdown-label"><?php print t('Dies'); ?></div>
+          <div class="countdown-label"><?php print t('Days'); ?></div>
         </div>
         <div class="countdown-item">
           <span class="countdown-number" id="hours">00</span>
-          <div class="countdown-label"><?php print t('Hores'); ?></div>
+          <div class="countdown-label"><?php print t('Hours'); ?></div>
         </div>
         <div class="countdown-item">
           <span class="countdown-number" id="minutes">00</span>
-          <div class="countdown-label"><?php print t('Minuts'); ?></div>
+          <div class="countdown-label"><?php print t('Minutes'); ?></div>
         </div>
         <div class="countdown-item">
           <span class="countdown-number" id="seconds">00</span>
-          <div class="countdown-label"><?php print t('Segons'); ?></div>
+          <div class="countdown-label"><?php print t('Seconds'); ?></div>
         </div>
       </div>
     </div>
