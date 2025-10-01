@@ -28,6 +28,13 @@ function coming_soon_admin_form($form, &$form_state) {
     '#rows' => 5,
   );
 
+  $form['show_site_name'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show the Site Name'),
+    '#default_value' => $config->get('show_site_name'),
+    '#description' => t('When enabled, Site Name will also be shown.'),
+  );
+
   $form['page_title'] = array(
     '#type' => 'textfield',
     '#title' => t('Page title'),
