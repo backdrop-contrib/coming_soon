@@ -23,7 +23,7 @@ function coming_soon_admin_form($form, &$form_state) {
   $form['excluded_paths'] = array(
     '#type' => 'textarea',
     '#title' => t('Excluded paths'),
-    '#description' => t('Specify paths that should not show the coming soon page. Enter one path per line. Use * as a wildcard. Leave empty to show coming soon on all pages. Admin pages and user/login are always excluded.'),
+    '#description' => t('Specify system paths or aliases that should not show the coming soon page. Enter one path per line. Use * as a wildcard. Leave empty to show coming soon on all pages. Admin pages and user/login are always excluded.'),
     '#default_value' => $config->get('excluded_paths'),
     '#rows' => 5,
   );
