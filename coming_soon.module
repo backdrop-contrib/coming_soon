@@ -44,6 +44,12 @@ function coming_soon_init() {
   $config = config('coming_soon.settings');
   $enabled = $config->get('enabled');
   $current_path = current_path();
+  $alias = backdrop_get_path_alias($current_path);
+
+  $paths = array(
+    $current_path,
+    $alias,
+  );
 
   // Only show coming soon page if enabled
   if (!$enabled) {
@@ -56,12 +62,14 @@ function coming_soon_init() {
   }
 
   // Don't show on admin pages
-  if (path_is_admin(current_path())) {
-    return;
+  foreach ($paths as $path) {
+    if (path_is_admin($path)) {
+      return;
+    }
   }
 
   // Always allow access to user login page (security measure)
-  if ($current_path === 'user/login') {
+  if (in_array('user/login', $paths)) {
     return;
   }
 
@@ -82,12 +90,14 @@ function coming_soon_init() {
       // Handle wildcard paths
       if (strpos($excluded_path, '*') !== FALSE) {
         $pattern = '/^' . str_replace('\*', '.*', preg_quote($excluded_path, '/')) . '$/';
-        if (preg_match($pattern, $current_path)) {
-          return;
+        foreach ($paths as $path) {
+          if (preg_match($pattern, $path)) {
+            return;
+          }
         }
       } else {
         // Exact path match
-        if ($current_path === $excluded_path) {
+        if (in_array($excluded_path, $paths)) {
           return;
         }
       }
